@@ -1,16 +1,19 @@
 const express = require('express');
 
 const CLSContext = require('zipkin-context-cls');
-const {Tracer} = require('zipkin');
-const {recorder} = require('./recorder');
+const { Tracer } = require('zipkin');
+const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddleware;
+
 const ctxImpl = new CLSContext('zipkin');
 const localServiceName = 'userapi';
-const tracer = new Tracer({ctxImpl, recorder, localServiceName});
 
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const monk = require('monk');
+const { recorder } = require('./recorder');
+
+const tracer = new Tracer({ ctxImpl, recorder, localServiceName });
 
 const db = monk('userapi-db:27017/nodetest2');
 
@@ -19,7 +22,8 @@ const routes = require('./routes/index');
 const app = express();
 
 // instrument the server
-const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddleware;
+// const zipkinMiddleware = require('zipkin-instrumentation-express').expressMiddleware;
+
 app.use(zipkinMiddleware({ tracer }));
 
 // view engine setup

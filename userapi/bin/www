@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-var debug = require('debug')('my-application');
-var app = require('../app');
+const debug = require('debug')('my-application');
+// const Eureka = require('eureka-js-client').Eureka;
+const { Eureka } = require('eureka-js-client');
+
+const app = require('../app');
 
 // ------------------ Eureka Config --------------------------------------------
-
-const Eureka = require('eureka-js-client').Eureka;
 
 const eureka = new Eureka({
   instance: {
@@ -13,25 +14,26 @@ const eureka = new Eureka({
     ipAddr: '127.0.0.1',
     statusPageUrl: 'http://userapi:3000',
     port: {
-      '$': 3000,
+      $: 3000,
       '@enabled': 'true',
     },
     vipAddress: 'localhost',
     dataCenterInfo: {
       '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
       name: 'MyOwn',
-    }
+    },
   },
   eureka: {
     host: 'userapi-discovery',
     port: 8761,
     servicePath: '/eureka/apps/',
     maxRetries: 300,
-    requestRetryDelay: 5000
-  }
+    requestRetryDelay: 5000,
+  },
 });
 eureka.logger.level('debug');
-eureka.start(function(error){
+eureka.start((error) => {
+  // eslint-disable-next-line no-console
   console.log(error || 'complete');
 });
 
@@ -39,6 +41,6 @@ eureka.start(function(error){
 
 app.set('port', process.env.PORT || 3000);
 
-var server = app.listen(app.get('port'), function() {
-  debug('Express server listening on port ' + server.address().port);
+const server = app.listen(app.get('port'), () => {
+  debug(`Express server listening on port ${server.address().port}`);
 });
