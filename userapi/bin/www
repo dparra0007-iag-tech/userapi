@@ -2,6 +2,41 @@
 var debug = require('debug')('my-application');
 var app = require('../app');
 
+// ------------------ Eureka Config --------------------------------------------
+
+const Eureka = require('eureka-js-client').Eureka;
+
+const eureka = new Eureka({
+  instance: {
+    app: 'userapi',
+    hostName: 'userapi',
+    ipAddr: '127.0.0.1',
+    statusPageUrl: 'http://userapi:3000',
+    port: {
+      '$': 3000,
+      '@enabled': 'true',
+    },
+    vipAddress: 'localhost',
+    dataCenterInfo: {
+      '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
+      name: 'MyOwn',
+    }
+  },
+  eureka: {
+    host: 'userapi-discovery',
+    port: 8761,
+    servicePath: '/eureka/apps/',
+    maxRetries: 300,
+    requestRetryDelay: 5000
+  }
+});
+eureka.logger.level('debug');
+eureka.start(function(error){
+  console.log(error || 'complete');
+});
+
+// ------------------ Eureka Config --------------------------------------------
+
 app.set('port', process.env.PORT || 3000);
 
 var server = app.listen(app.get('port'), function() {

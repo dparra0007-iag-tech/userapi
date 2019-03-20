@@ -16,14 +16,20 @@ stages:
 variables:
   IMAGE_NAME: userapi
   IMAGE_DB_NAME: userapi-db
+  IMAGE_APIGATEWAY_NAME: userapi-apigateway
+  IMAGE_DISCOVERY_NAME: userapi-discovery
   URL_IB_REGISTRY: https://iaghcp.jfrog.io/iaghcp/api/docker/docker-ib/v2/$IMAGE_NAME
   TECH_ARCH_REGISTRY: iaghcp-docker-technical-architecture.jfrog.io
   IB_REGISTRY: iaghcp-docker-ib.jfrog.io
   CONTAINER_SERVICE_IMAGE: $IB_REGISTRY/userapi/$IMAGE_NAME
   CONTAINER_DB_IMAGE: $IB_REGISTRY/userapi/$IMAGE_DB_NAME
+  CONTAINER_APIGATEWAY_IMAGE: $GLP_REGISTRY/userapi/$IMAGE_APIGATEWAY_NAME
+  CONTAINER_DISCOVERY_IMAGE: $GLP_REGISTRY/userapi/$IMAGE_DISCOVERY_NAME
   BUILD_NAME: $CI_PROJECT_NAME
   GITLAB_SERVICE_REGISTRY: registry.gitlab.com/iag-dev/ib/userapi/$IMAGE_NAME
   GITLAB_DB_REGISTRY: registry.gitlab.com/iag-dev/ib/userapi/$IMAGE_DB_NAME
+  GITLAB_APIGATEWAY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_APIGATEWAY_NAME
+  GITLAB_DISCOVERY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_DISCOVERY_NAME
 
 build_service_node:
   stage: build code
@@ -81,6 +87,26 @@ build_service:
     - docker build -t $GITLAB_SERVICE_REGISTRY ./userapi
     - docker tag $GITLAB_SERVICE_REGISTRY $GITLAB_SERVICE_REGISTRY:$CI_COMMIT_REF_NAME
     - docker push $GITLAB_SERVICE_REGISTRY:$CI_COMMIT_REF_NAME
+  except:
+    - triggers
+
+build_discovery:
+  stage: build application
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build -t $GITLAB_DISCOVERY_REGISTRY ./userapi-discovery
+    - docker tag $GITLAB_DISCOVERY_REGISTRY $GITLAB_DISCOVERY_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker push $GITLAB_DISCOVERY_REGISTRY:$CI_COMMIT_REF_NAME
+  except:
+    - triggers
+
+build_apigateway:
+  stage: build application
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build -t $GITLAB_APIGATEWAY_REGISTRY ./userapi-apigateway
+    - docker tag $GITLAB_APIGATEWAY_REGISTRY $GITLAB_APIGATEWAY_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker push $GITLAB_APIGATEWAY_REGISTRY:$CI_COMMIT_REF_NAME
   except:
     - triggers
 
@@ -202,6 +228,34 @@ push_service_binaries:
   except:
     - triggers
 
+push_discovery_binaries:
+  stage: push binaries
+  tags:
+    - docker-push
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker pull $GITLAB_DISCOVERY_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker tag $GITLAB_DISCOVERY_REGISTRY:$CI_COMMIT_REF_NAME $CONTAINER_DISCOVERY_IMAGE
+    - make push ARTIFACTORY_URL=$ARTIFACTORY_URL ARTIFACTORY_USER=$ARTIFACTORY_USER ARTIFACTORY_PASS=$ARTIFACTORY_PASS CONTAINER_SERVICE_IMAGE=$CONTAINER_DISCOVERY_IMAGE DOCKER_REPO_KEY=$DOCKER_REPO_KEY BUILD_NAME=$BUILD_NAME CI_PIPELINE_ID=$CI_PIPELINE_ID URL_GLP_REGISTRY=$URL_GLP_REGISTRY
+  only:
+    - master
+  except:
+    - triggers
+
+push_apigateway_binaries:
+  stage: push binaries
+  tags:
+    - docker-push
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker pull $GITLAB_APIGATEWAY_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker tag $GITLAB_APIGATEWAY_REGISTRY:$CI_COMMIT_REF_NAME $CONTAINER_APIGATEWAY_IMAGE
+    - make push ARTIFACTORY_URL=$ARTIFACTORY_URL ARTIFACTORY_USER=$ARTIFACTORY_USER ARTIFACTORY_PASS=$ARTIFACTORY_PASS CONTAINER_SERVICE_IMAGE=$CONTAINER_APIGATEWAY_IMAGE DOCKER_REPO_KEY=$DOCKER_REPO_KEY BUILD_NAME=$BUILD_NAME CI_PIPELINE_ID=$CI_PIPELINE_ID URL_GLP_REGISTRY=$URL_GLP_REGISTRY
+  only:
+    - master
+  except:
+    - triggers
+
 push_db_binaries:
   stage: push binaries
   tags:
@@ -227,6 +281,8 @@ deploy_staging:
   before_script:
     - sed -i -e "s/{{TAG_SERVICE}}/$CI_PIPELINE_ID/g" deployment.yml
     - sed -i -e "s/{{TAG_DB}}/$CI_PIPELINE_ID/g" deployment.yml
+    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_PIPELINE_ID/g" deployment.yml
+    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_PIPELINE_ID/g" deployment.yml
     - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment.yml
     - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment.yml
     - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment.yml
@@ -258,6 +314,8 @@ deploy_production:
   before_script:
     - sed -i -e "s/{{TAG_SERVICE}}/$CI_PIPELINE_ID/g" deployment-prod.yml
     - sed -i -e "s/{{TAG_DB}}/$CI_PIPELINE_ID/g" deployment-prod.yml
+    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_PIPELINE_ID/g" deployment.yml
+    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_PIPELINE_ID/g" deployment.yml
     - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment-prod.yml
     - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment-prod.yml
     - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment-prod.yml

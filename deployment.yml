@@ -148,6 +148,61 @@ items:
   kind: ImageStream
   metadata:
     creationTimestamp: null
+    name: userapi-apigateway
+  spec:
+    tags:
+    - annotations:
+        openshift.io/imported-from: iaghcp-docker-glp.jfrog.io/userapi/userapi-apigateway:{{TAG_APIGATEWAY}}
+      from:
+        kind: DockerImage
+        name: iaghcp-docker-glp.jfrog.io/userapi/userapi-apigateway:{{TAG_APIGATEWAY}}
+      generation: null
+      importPolicy: {}
+      name: "{{TAG_APIGATEWAY}}"
+  status:
+    dockerImageRepository: ""
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: userapi-apigateway
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: userapi-apigateway
+    strategy:
+      resources: {}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          deploymentconfig: userapi-apigateway
+      spec:
+        containers:
+        - env:
+          - name: GLOBALCONF
+            value: {{TAG_GLOBALCONF}}
+          image: iaghcp-docker-glp.jfrog.io/userapi/userapi-apigateway:{{TAG_APIGATEWAY}}
+          name: userapi-apigateway
+          ports:
+          - containerPort: 8080
+          resources: {}
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - userapi-apigateway
+        from:
+          kind: ImageStreamTag
+          name: userapi-apigateway:{{TAG_APIGATEWAY}}
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
     name: userapi-db
   spec:
     tags:
@@ -198,6 +253,58 @@ items:
       type: ImageChange
   status: {}
 - apiVersion: v1
+  kind: ImageStream
+  metadata:
+    creationTimestamp: null
+    name: userapi-discovery
+  spec:
+    tags:
+    - annotations:
+        openshift.io/imported-from: iaghcp-docker-glp.jfrog.io/userapi/userapi-discovery:{{TAG_DISCOVERY}}
+      from:
+        kind: DockerImage
+        name: iaghcp-docker-glp.jfrog.io/userapi/userapi-discovery:{{TAG_DISCOVERY}}
+      generation: null
+      importPolicy: {}
+      name: "{{TAG_DISCOVERY}}"
+  status:
+    dockerImageRepository: ""
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    name: userapi-discovery
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: userapi-discovery
+    strategy:
+      resources: {}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          deploymentconfig: userapi-discovery
+      spec:
+        containers:
+        - image: iaghcp-docker-glp.jfrog.io/userapi/userapi-discovery:{{TAG_DISCOVERY}}
+          name: userapi-discovery
+          ports:
+          - containerPort: 8761
+          resources: {}
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - userapi-discovery
+        from:
+          kind: ImageStreamTag
+          name: userapi-discovery:{{TAG_DISCOVERY}}
+      type: ImageChange
+  status: {}
+- apiVersion: v1
   kind: Service
   metadata:
     creationTimestamp: null
@@ -215,6 +322,20 @@ items:
   kind: Service
   metadata:
     creationTimestamp: null
+    name: userapi-apigateway
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      targetPort: 8080
+    selector:
+      deploymentconfig: userapi-apigateway
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
     name: userapi-db
   spec:
     ports:
@@ -226,6 +347,20 @@ items:
       targetPort: 28017
     selector:
       deploymentconfig: userapi-db
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: userapi-discovery
+  spec:
+    ports:
+    - name: 8761-tcp
+      port: 8761
+      targetPort: 8761
+    selector:
+      deploymentconfig: userapi-discovery
   status:
     loadBalancer: {}
 kind: List
