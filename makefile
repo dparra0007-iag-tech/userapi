@@ -27,6 +27,6 @@ push:
 	jfrog rt dp ${CONTAINER_SERVICE_IMAGE}:${VERSION} ${DOCKER_REPO_KEY} --build-name=${BUILD_NAME} --build-number=${CI_PIPELINE_ID}
 	jfrog rt bce ${BUILD_NAME} ${CI_PIPELINE_ID}
 	jfrog rt bp ${BUILD_NAME} ${CI_PIPELINE_ID}
-	docker login -u ${ARTIFACTORY_USER} -p ${ARTIFACTORY_PASS} ${IB_REGISTRY}
+	docker login -u ${ARTIFACTORY_USER} -p ${ARTIFACTORY_PASS} ${GLP_REGISTRY}
 	docker push ${CONTAINER_SERVICE_IMAGE}
 	docker logout ${BA_REGISTRY}
