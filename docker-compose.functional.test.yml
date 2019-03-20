@@ -1,14 +1,14 @@
 version: '3'
 services:
   userapi-db:
-    image: registry.gitlab.com/iag-dev/ib/userapi/userapi-db:${TAG}
+    image: registry.gitlab.com/iag-dev/glp/userapi/userapi-db:${TAG}
     # build:
     #   context: ./userapi-db
     ports:
       - 27017:27017
       - 28017:28017
   userapi:
-    image: registry.gitlab.com/iag-dev/ib/userapi/userapi:${TAG}
+    image: registry.gitlab.com/iag-dev/glp/userapi/userapi:${TAG}
     # build:
     #   context: ./userapi
     ports:
