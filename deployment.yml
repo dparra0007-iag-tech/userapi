@@ -36,10 +36,10 @@ items:
   spec:
     tags:
     - annotations:
-        openshift.io/imported-from: iaghcp-docker-ib.jfrog.io/userapi/userapi:{{TAG_SERVICE}}
+        openshift.io/imported-from: iaghcp-docker-glp.jfrog.io/userapi/userapi:{{TAG_SERVICE}}
       from:
         kind: DockerImage
-        name: iaghcp-docker-ib.jfrog.io/userapi/userapi:{{TAG_SERVICE}}
+        name: iaghcp-docker-glp.jfrog.io/userapi/userapi:{{TAG_SERVICE}}
       generation: null
       importPolicy: {}
       name: "{{TAG_SERVICE}}"
@@ -97,7 +97,7 @@ items:
           deploymentconfig: userapi
       spec:
         containers:
-        - image: iaghcp-docker-ib.jfrog.io/userapi/userapi:{{TAG_SERVICE}}
+        - image: iaghcp-docker-glp.jfrog.io/userapi/userapi:{{TAG_SERVICE}}
           name: userapi
           ports:
           - containerPort: 3000
@@ -207,10 +207,10 @@ items:
   spec:
     tags:
     - annotations:
-        openshift.io/imported-from: iaghcp-docker-ib.jfrog.io/userapi/userapi-db:{{TAG_DB}}
+        openshift.io/imported-from: iaghcp-docker-glp.jfrog.io/userapi/userapi-db:{{TAG_DB}}
       from:
         kind: DockerImage
-        name: iaghcp-docker-ib.jfrog.io/userapi/userapi-db:{{TAG_DB}}
+        name: iaghcp-docker-glp.jfrog.io/userapi/userapi-db:{{TAG_DB}}
       generation: null
       importPolicy: {}
       name: "{{TAG_DB}}"
@@ -234,7 +234,7 @@ items:
           deploymentconfig: userapi-db
       spec:
         containers:
-        - image: iaghcp-docker-ib.jfrog.io/userapi/userapi-db:{{TAG_DB}}
+        - image: iaghcp-docker-glp.jfrog.io/userapi/userapi-db:{{TAG_DB}}
           name: userapi-db
           ports:
           - containerPort: 27017
