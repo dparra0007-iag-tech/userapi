@@ -290,13 +290,13 @@ deploy_staging:
     - oc project ocp01-userapi-stg
   script:
     - oc create --filename=deployment.yml
-    - oc expose service userapi
+    - oc expose service userapi-apigateway
   artifacts:
     paths:
       - ./deployment.yml
   environment:
     name: staging
-    url: http://userapi-ocp01-userapi-stg.apps.ocp01.hcp.iairgroup.com/userapi/1.0/users
+    url: http://userapi-apigateway-ocp01-userapi-stg.apps.ocp01.hcp.iairgroup.com/userapi/userapi/1.0/users
   only:
       - master
   except:
@@ -326,14 +326,14 @@ deploy_production:
     - istioctl kube-inject -f deployment-prod.yml -o deployment-with-istio.yml
     #- oc delete -f deployment-with-istio.yml
     - oc apply -f deployment-with-istio.yml
-    - oc expose service userapi
+    - oc expose service userapi-apigateway
   artifacts:
     paths:
       - ./deployment-prod.yml
       - ./deployment-with-istio.yml
   environment:
     name: production
-    url: http://userapi-w53-userapi.dit-iaggs.com/userapi/1.0/users/
+    url: http://userapi-apigateway-w53-userapi.dit-iaggs.com/userapi/userapi/1.0/users/
   when: manual
   only:
       - master
