@@ -1,3 +1,3 @@
 FROM iaghcp-docker-technical-architecture.jfrog.io/newman:1.0.0
 
-CMD ["/bin/sh", "-c", "sleep 30 && newman run https://www.getpostman.com/collections/6d9fe4f1a0033de5a2af --reporters cli,junit --reporter-junit-export /var/newman/outputfile.xml --environment https://api.getpostman.com/environments/651996-b80ed237-9179-35ec-d8a1-35d574e118c8?apikey=100822fe2bd7454eb916c8ebdd4be266 && sed -i -e 's/<testcase/<testcase classname=\"CI\"/g' /var/newman/outputfile.xml"]
+CMD ["/bin/sh", "-c", "sleep 30 && newman run https://www.getpostman.com/collections/f685e5d789063b1093f8 --reporters cli,junit --reporter-junit-export /var/newman/outputfile.xml --environment https://api.getpostman.com/environments/651996-b80ed237-9179-35ec-d8a1-35d574e118c8?apikey=100822fe2bd7454eb916c8ebdd4be266 && sed -i -e 's/<testcase/<testcase classname=\"CI\"/g' /var/newman/outputfile.xml"]
