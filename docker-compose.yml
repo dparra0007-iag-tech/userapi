@@ -21,8 +21,9 @@ services:
     ports:
       - 8761:8761
   userapi:
-    build:
-      context: ./userapi
+    image: composed-userapi
+    # build:
+    #   context: ./userapi
     ports:
       - 3000:3000
     links:

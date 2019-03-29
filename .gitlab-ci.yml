@@ -82,9 +82,11 @@ static_test_service:
 
 build_service:
   stage: build application
+  variables:
+    BASH: /usr/local/bin/
   script:
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
-    - docker build -t $GITLAB_SERVICE_REGISTRY ./userapi
+    - make build PATH=./userapi SERVICE_REGISTRY=$GITLAB_SERVICE_REGISTRY BASH=$BASH
     - docker tag $GITLAB_SERVICE_REGISTRY $GITLAB_SERVICE_REGISTRY:$CI_COMMIT_REF_NAME
     - docker push $GITLAB_SERVICE_REGISTRY:$CI_COMMIT_REF_NAME
   except:
