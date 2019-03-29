@@ -1,9 +1,9 @@
 version: '3'
 services:
   userapi-apigateway:
-    #image: registry.gitlab.com/iag-dev/glp/userapi/userapi-apigateway:${TAG}
-    build:
-      context: ./userapi-apigateway
+    image: registry.gitlab.com/iag-dev/glp/userapi/userapi-apigateway:${TAG}
+    # build:
+    #   context: ./userapi-apigateway
     environment:
       - GLOBALCONF=https://raw.githubusercontent.com/dparra0007/W53-STATIC-CONFIG-SETTINGS/master/env.sh
     ports:
@@ -11,16 +11,16 @@ services:
     depends_on:
       - userapi
   userapi-db:
-    #image: registry.gitlab.com/iag-dev/glp/userapi/userapi-db:${TAG}
-    build:
-      context: ./userapi-db
+    image: registry.gitlab.com/iag-dev/glp/userapi/userapi-db:${TAG}
+    # build:
+    #   context: ./userapi-db
     ports:
       - 27017:27017
       - 28017:28017
   userapi:
-    #image: registry.gitlab.com/iag-dev/glp/userapi/userapi:${TAG}
-    build:
-      context: ./userapi
+    image: registry.gitlab.com/iag-dev/glp/userapi/userapi:${TAG}
+    # build:
+    #   context: ./userapi
     ports:
       - 3000:3000
     links:
