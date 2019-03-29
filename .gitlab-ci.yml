@@ -1,4 +1,4 @@
-image: iaghcp-docker-technical-architecture.jfrog.io/docker:1.0.0
+image: iaghcp-docker-technical-architecture.jfrog.io/docker:1.1.0
 
 services:
   - name: iaghcp-docker-technical-architecture.jfrog.io/docker-dind:1.0.0
