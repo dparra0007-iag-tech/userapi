@@ -31,6 +31,36 @@ variables:
   GITLAB_APIGATEWAY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_APIGATEWAY_NAME
   GITLAB_DISCOVERY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_DISCOVERY_NAME
 
+test:
+  stage: build code
+  before_script:
+    - apk update
+    - apk upgrade
+    #- apk add python python-dev py-pip build-base
+    #- pip install --upgrade pip setuptools
+    - curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+    - chmod +x /usr/local/bin/docker-compose
+    - apk add --no-cache python3 py3-pip python3-dev
+    - apk add --no-cache openssl-dev libffi-dev build-base
+    - pip3 install --upgrade pip
+    - pip3 install --upgrade setuptools
+    - pip3 install cffi
+    - pip3 install docker-compose
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - export TAG=$CI_COMMIT_REF_NAME 
+    - docker-compose -f docker-compose.design.test.yml up -d
+    - sleep 90s
+    - docker logs $(docker ps -a --filter "name=userapi_userapi-design-test_1" --format "{{.ID}}")
+  after_script:
+    - docker stop $(docker ps -a --filter status=running --format "{{.ID}}") > /dev/null
+    - docker rm $(docker ps -a -q) -f > /dev/null
+    - docker rmi $(docker images -q) -f > /dev/null || true
+  only:
+    - master
+  except:
+    - triggers
+
 build_service_node:
   stage: build code
   image: iaghcp-docker-technical-architecture.jfrog.io/node:latest
@@ -127,10 +157,16 @@ validate_api_description:
   before_script:
     - apk update
     - apk upgrade
-    - apk add python python-dev py-pip build-base
+    #- apk add python python-dev py-pip build-base
+    #- pip install --upgrade pip setuptools
     - curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
     - chmod +x /usr/local/bin/docker-compose
-    - pip install docker-compose
+    - apk add --no-cache python3 py3-pip python3-dev
+    - apk add --no-cache openssl-dev libffi-dev build-base
+    - pip3 install --upgrade pip
+    - pip3 install --upgrade setuptools
+    - pip3 install cffi
+    - pip3 install docker-compose
   script:
     - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
     - export TAG=$CI_COMMIT_REF_NAME 
