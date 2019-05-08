@@ -8,10 +8,12 @@ stages:
 - build code
 - test code
 - build application
+- review application
 - test application
 - push binaries
 - deploy application
 - regression test deploy
+- cleanup
 
 variables:
   IMAGE_NAME: userapi
@@ -21,15 +23,15 @@ variables:
   URL_GLP_REGISTRY: https://iaghcp.jfrog.io/iaghcp/api/docker/docker-glp/v2/$IMAGE_NAME
   TECH_ARCH_REGISTRY: iaghcp-docker-technical-architecture.jfrog.io
   GLP_REGISTRY: iaghcp-docker-glp.jfrog.io
-  CONTAINER_SERVICE_IMAGE: $GLP_REGISTRY/userapi/$IMAGE_NAME
-  CONTAINER_DB_IMAGE: $GLP_REGISTRY/userapi/$IMAGE_DB_NAME
-  CONTAINER_APIGATEWAY_IMAGE: $GLP_REGISTRY/userapi/$IMAGE_APIGATEWAY_NAME
-  CONTAINER_DISCOVERY_IMAGE: $GLP_REGISTRY/userapi/$IMAGE_DISCOVERY_NAME
+  CONTAINER_SERVICE_IMAGE: iaghcp-docker-glp.jfrog.io/userapi/$IMAGE_NAME
+  CONTAINER_DB_IMAGE: iaghcp-docker-glp.jfrog.io/userapi/$IMAGE_DB_NAME
+  CONTAINER_APIGATEWAY_IMAGE: iaghcp-docker-glp.jfrog.io/userapi/$IMAGE_APIGATEWAY_NAME
+  CONTAINER_DISCOVERY_IMAGE: iaghcp-docker-glp.jfrog.io/userapi/$IMAGE_DISCOVERY_NAME
   BUILD_NAME: $CI_PROJECT_NAME
-  GITLAB_SERVICE_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_NAME
-  GITLAB_DB_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_DB_NAME
-  GITLAB_APIGATEWAY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_APIGATEWAY_NAME
-  GITLAB_DISCOVERY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/$IMAGE_DISCOVERY_NAME
+  GITLAB_SERVICE_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi
+  GITLAB_DB_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-db
+  GITLAB_APIGATEWAY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-apigateway
+  GITLAB_DISCOVERY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-discovery
 
 build_service_node:
   stage: build code
@@ -55,7 +57,7 @@ build_service_node:
 
 static_test_service:
   stage: test code
-  image: iaghcp-docker-technical-architecture.jfrog.io/sonar-scanner:2.0.0
+  image: iaghcp-docker-technical-architecture.jfrog.io/sonar-scanner:2.0.1
   variables:
     PROJECT_KEY: "$CI_PROJECT_NAMESPACE:$CI_PROJECT_NAME"
   before_script:
@@ -70,7 +72,7 @@ static_test_service:
     - sonar-scanner
      -Dsonar.projectKey=${PROJECT_KEY//[\/]/_} 
      -Dsonar.projectName=$CI_PROJECT_NAME 
-     -Dsonar.branch=$CI_COMMIT_REF_NAME 
+     -Dsonar.branch.name=$CI_COMMIT_REF_NAME 
      -Dsonar.projectVersion=$CI_JOB_ID 
      -Dsonar.sources=./ 
      -Donar.eslint.reportPaths=report.json 
@@ -121,6 +123,77 @@ build_db:
     - docker push $GITLAB_DB_REGISTRY:$CI_COMMIT_REF_NAME
   except:
     - triggers
+
+.deploy: &deploy
+  image: iaghcp-docker-technical-architecture.jfrog.io/openshift-cli:1.1.0
+  script:
+
+    - cp $DEPLOYMENT_FILE deployment-$CI_BUILD_REF_NAME.yml
+
+    - sed -i -e "s/{{TAG_SERVICE}}/$CI_TAG_SERVICE/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{TAG_DB}}/$CI_TAG_DB/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_TAG_APIGATEWAY/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_TAG_DISCOVERY/g" deployment-$CI_BUILD_REF_NAME.yml
+
+    - sed -i -e "s#{{IMG_SERVICE}}#$CI_IMG_SERVICE#g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s#{{IMG_DB}}#$CI_IMG_DB#g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s#{{IMG_APIGATEWAY}}#$CI_IMG_APIGATEWAY#g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s#{{IMG_DISCOVERY}}#$CI_IMG_DISCOVERY#g" deployment-$CI_BUILD_REF_NAME.yml
+
+    - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment-$CI_BUILD_REF_NAME.yml
+
+    - oc login $OC_URL --token $OC_TOKEN --insecure-skip-tls-verify
+    - oc project "$PROJECT" 2> /dev/null || oc new-project "$PROJECT"
+    - oc describe secret $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME || ( oc create secret docker-registry $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
+     --docker-server=gitlab.com 
+     --docker-username=$GITLAB_REGISTRY_USER_FROM_OC 
+     --docker-password=$GITLAB_REGISTRY_PASS_FROM_OC 
+     --docker-email=$GITLAB_REGISTRY_EMAIL_FROM_OC && 
+     oc secrets link default $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME --for=pull && 
+     oc secrets link deployer $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME --for=pull && 
+     oc secrets link builder $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME --for=pull )
+    - oc describe secret $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry || ( oc create secret docker-registry $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry
+     --docker-server=registry.gitlab.com 
+     --docker-username=$GITLAB_REGISTRY_USER_FROM_OC 
+     --docker-password=$GITLAB_REGISTRY_PASS_FROM_OC 
+     --docker-email=$GITLAB_REGISTRY_EMAIL_FROM_OC && 
+     oc secrets link default $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry --for=pull && 
+     oc secrets link deployer $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry --for=pull && 
+     oc secrets link builder $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry --for=pull )
+    - make deploy DEPLOYMENT_FILE=deployment-$CI_BUILD_REF_NAME.yml
+  artifacts:
+    paths:
+      - deployment-$CI_BUILD_REF_NAME.yml
+
+review:
+  <<: *deploy
+  stage: review application
+  variables:
+    OPENSHIFT_DOMAIN: dit-iaggs.com
+    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
+    DEPLOYMENT_FILE: deployment-review.yml
+    OC_URL: $OC_URL_STG
+    OC_TOKEN: $OC_TOKEN_STG
+
+    CI_TAG_SERVICE: $CI_COMMIT_REF_NAME
+    CI_TAG_DB: $CI_COMMIT_REF_NAME
+    CI_TAG_APIGATEWAY: $CI_COMMIT_REF_NAME
+    CI_TAG_DISCOVERY: $CI_COMMIT_REF_NAME
+    CI_IMG_SERVICE: $GITLAB_SERVICE_REGISTRY
+    CI_IMG_DB: $GITLAB_DB_REGISTRY
+    CI_IMG_APIGATEWAY: $GITLAB_APIGATEWAY_REGISTRY
+    CI_IMG_DISCOVERY: $GITLAB_DISCOVERY_REGISTRY
+    TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
+  environment:
+    name: $CI_PROJECT_NAME/$CI_BUILD_REF_NAME
+    url: http://userapi-apigateway-$CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME.$OPENSHIFT_DOMAIN
+    on_stop: stop-review
+  only:
+    - branches
+  except:
+    - master
 
 validate_api_description:
   stage: test application
@@ -285,69 +358,56 @@ push_db_binaries:
     - triggers
 
 deploy_staging:
+  <<: *deploy
   stage: deploy application
   variables:
+    OPENSHIFT_DOMAIN: dit-iaggs.com
+    PROJECT: $CI_PROJECT_PATH_SLUG
+    DEPLOYMENT_FILE: deployment-review.yml
     OC_URL: $OC_URL_STG
     OC_TOKEN: $OC_TOKEN_STG
+
+    CI_TAG_SERVICE: $CI_PIPELINE_ID
+    CI_TAG_DB: $CI_PIPELINE_ID
+    CI_TAG_APIGATEWAY: $CI_PIPELINE_ID
+    CI_TAG_DISCOVERY: $CI_PIPELINE_ID
+    CI_IMG_SERVICE: $CONTAINER_SERVICE_IMAGE
+    CI_IMG_DB: $CONTAINER_DB_IMAGE
+    CI_IMG_APIGATEWAY: $CONTAINER_APIGATEWAY_IMAGE
+    CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
-    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/userapi-stg\/env.sh'
-    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
-  before_script:
-    - sed -i -e "s/{{TAG_SERVICE}}/$CI_PIPELINE_ID/g" deployment.yml
-    - sed -i -e "s/{{TAG_DB}}/$CI_PIPELINE_ID/g" deployment.yml
-    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_PIPELINE_ID/g" deployment.yml
-    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_PIPELINE_ID/g" deployment.yml
-    - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment.yml
-    - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment.yml
-    - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment.yml
-    - oc login $OC_URL_STG --token $OC_TOKEN_STG --insecure-skip-tls-verify
-    - oc project ocp01-userapi-stg
-  script:
-    - oc create --filename=deployment.yml
-    - oc expose service userapi-apigateway
-  artifacts:
-    paths:
-      - ./deployment.yml
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-greetingapi-stg\/env.sh'
   environment:
     name: staging
-    url: http://userapi-apigateway-ocp01-userapi-stg.apps.ocp01.hcp.iairgroup.com/userapi/userapi/1.0/users
+    url: http://userapi-apigateway-$CI_PROJECT_PATH_SLUG.$OPENSHIFT_DOMAIN
   only:
       - master
   except:
     - triggers
 
 deploy_production:
+  <<: *deploy
   stage: deploy application
-  image: dparra0007/docker:20180917-2
   variables:
+    OPENSHIFT_DOMAIN: apps.ocp01.hcp.iairgroup.com
+    PROJECT: ocp01-userapi-stg
+    DEPLOYMENT_FILE: deployment.yml
     OC_URL: $OC_URL_PRO
     OC_TOKEN: $OC_TOKEN_PRO
+
+    CI_TAG_SERVICE: $CI_PIPELINE_ID
+    CI_TAG_DB: $CI_PIPELINE_ID
+    CI_TAG_APIGATEWAY: $CI_PIPELINE_ID
+    CI_TAG_DISCOVERY: $CI_PIPELINE_ID
+    CI_IMG_SERVICE: $CONTAINER_SERVICE_IMAGE
+    CI_IMG_DB: $CONTAINER_DB_IMAGE
+    CI_IMG_APIGATEWAY: $CONTAINER_APIGATEWAY_IMAGE
+    CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/master\/env.sh'
-    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/userapi\/env.sh'
-    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/master\/default.json'
-  before_script:
-    - sed -i -e "s/{{TAG_SERVICE}}/$CI_PIPELINE_ID/g" deployment-prod.yml
-    - sed -i -e "s/{{TAG_DB}}/$CI_PIPELINE_ID/g" deployment-prod.yml
-    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_PIPELINE_ID/g" deployment.yml
-    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_PIPELINE_ID/g" deployment.yml
-    - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment-prod.yml
-    - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment-prod.yml
-    - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment-prod.yml
-    - oc login $OC_URL_PRO --token $OC_TOKEN_PRO --insecure-skip-tls-verify
-    - oc new-project $(echo $CI_PROJECT_NAME | tr '[:upper:]' '[:lower:]')
-    - oc adm policy add-scc-to-user privileged -z default -n $(echo $CI_PROJECT_NAME | tr '[:upper:]' '[:lower:]')
-  script:
-    - istioctl kube-inject -f deployment-prod.yml -o deployment-with-istio.yml
-    #- oc delete -f deployment-with-istio.yml
-    - oc apply -f deployment-with-istio.yml
-    - oc expose service userapi-apigateway
-  artifacts:
-    paths:
-      - ./deployment-prod.yml
-      - ./deployment-with-istio.yml
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/greetingapi\/env.sh'
   environment:
     name: production
-    url: http://userapi-apigateway-w53-userapi.dit-iaggs.com/userapi/userapi/1.0/users/
+    url: http://userapi-apigateway-ocp01-greetingapi-stg.$OPENSHIFT_DOMAIN
   when: manual
   only:
       - master

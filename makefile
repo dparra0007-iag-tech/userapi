@@ -28,3 +28,6 @@ push:
 	$(BASH)docker login -u ${ARTIFACTORY_USER} -p ${ARTIFACTORY_PASS} ${GLP_REGISTRY}
 	$(BASH)docker push ${CONTAINER_SERVICE_IMAGE}
 	$(BASH)docker logout ${GLP_REGISTRY}
+
+deploy:
+	@oc describe -f ${DEPLOYMENT_FILE} && ([ $$? -eq 0 ] && oc replace -f ${DEPLOYMENT_FILE}) || ( oc create -f ${DEPLOYMENT_FILE} || echo "DEPLOYMENT REPLACED." )
