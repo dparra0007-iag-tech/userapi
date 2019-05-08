@@ -452,3 +452,21 @@ functional_regression_test_production:
   when: manual
   only:
       - master
+
+stop-review:
+  image: iaghcp-docker-technical-architecture.jfrog.io/openshift-cli:1.0.0
+  stage: cleanup
+  variables:
+    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
+  before_script:
+    - oc login $OC_URL_PRO --token $OC_TOKEN_PRO --insecure-skip-tls-verify
+  script:
+    - oc delete project $PROJECT
+  when: manual
+  environment:
+    name: $CI_PROJECT_NAME/$CI_BUILD_REF_NAME
+    action: stop
+  only:
+    - branches
+  except:
+    - master
