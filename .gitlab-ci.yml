@@ -388,7 +388,7 @@ deploy_staging:
     CI_IMG_APIGATEWAY: $CONTAINER_APIGATEWAY_IMAGE
     CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
-    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-greetingapi-stg\/env.sh'
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
     REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
   environment:
     name: staging
@@ -417,7 +417,7 @@ deploy_production:
     CI_IMG_APIGATEWAY: $CONTAINER_APIGATEWAY_IMAGE
     CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/master\/env.sh'
-    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/greetingapi\/env.sh'
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi\/env.sh'
     REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/master\/default.json'
   environment:
     name: production
