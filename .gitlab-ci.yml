@@ -152,6 +152,7 @@ build_db:
 
     - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment-$CI_BUILD_REF_NAME.yml
     - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment-$CI_BUILD_REF_NAME.yml
 
     - oc login $OC_URL --token $OC_TOKEN --insecure-skip-tls-verify
     - oc project "$PROJECT" 2> /dev/null || oc new-project "$PROJECT"
@@ -196,6 +197,7 @@ review:
     CI_IMG_DISCOVERY: $GITLAB_DISCOVERY_REGISTRY
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
     TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
+    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
   environment:
     name: $CI_PROJECT_NAME/$CI_BUILD_REF_NAME
     url: http://userapi-apigateway-$CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME.$OPENSHIFT_DOMAIN
@@ -387,6 +389,7 @@ deploy_staging:
     CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
     TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-greetingapi-stg\/env.sh'
+    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
   environment:
     name: staging
     url: http://userapi-apigateway-$CI_PROJECT_PATH_SLUG.$OPENSHIFT_DOMAIN
@@ -415,6 +418,7 @@ deploy_production:
     CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/master\/env.sh'
     TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/greetingapi\/env.sh'
+    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/master\/default.json'
   environment:
     name: production
     url: http://userapi-apigateway-ocp01-greetingapi-stg.$OPENSHIFT_DOMAIN
