@@ -473,7 +473,7 @@ stop-review:
   variables:
     PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
   before_script:
-    - oc login $OC_URL_PRO --token $OC_TOKEN_PRO --insecure-skip-tls-verify
+    - oc login $OC_URL_STG --token $OC_TOKEN_STG --insecure-skip-tls-verify
   script:
     - oc delete project $PROJECT
   when: manual
