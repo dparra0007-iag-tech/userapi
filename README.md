@@ -256,3 +256,17 @@ functional_regression_test_staging:
       - master
 ```
   Again, we take the already defined Postman tests, and execute them with Newman but using production configuration defined as Postman enviroment variables.
+
+## local development
+  
+minishift start
+minishift addon apply registry-route
+
+Add minishift private registry to insecure registry list in docker configuration
+  osascript -e 'quit app "Docker"'; open -a Docker ; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo ""
+  sudo systemctl restart docker.service
+
+make build PROJECT_NAME=userapi MINISHIFT_IP=$(minishift ip) -f makefile-local
+make push PROJECT_NAME=userapi MINISHIFT_IP=$(minishift ip) -f makefile-local
+make pre-deploy PROJECT_NAME=userapi -f makefile-local
+make deploy PROJECT_NAME=userapi DEPLOYMENT_FILE=deployment-local.yml -f makefile-local

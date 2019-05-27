@@ -1,0 +1,55 @@
+VERSION := ${CI_PIPELINE_ID}
+
+CI_TAG_SERVICE := local
+CI_TAG_DB := local
+CI_TAG_APIGATEWAY := local
+CI_TAG_DISCOVERY := local
+CI_IMG_SERVICE := ${PROJECT_NAME}
+CI_IMG_DB := ${PROJECT_NAME}-db
+CI_IMG_APIGATEWAY := ${PROJECT_NAME}-apigateway
+CI_IMG_DISCOVERY := ${PROJECT_NAME}-discovery
+TAG_GLOBALCONF := 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
+TAG_SYSTEMCONF := 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-${PROJECT_NAME}-stg\/env.sh'
+
+.PHONY: build
+build:
+	$(BASH)s2i build ./${PROJECT_NAME} iaghcp-docker-technical-architecture.jfrog.io/s2i-nodejs:1.0.0 ${PROJECT_NAME}:local
+	docker build -t ${PROJECT_NAME}-apigateway:local ./${PROJECT_NAME}-apigateway/
+	docker build -t ${PROJECT_NAME}-db:local ./${PROJECT_NAME}-db/
+	docker build -t ${PROJECT_NAME}-discovery:local ./${PROJECT_NAME}-discovery/
+
+	docker tag ${PROJECT_NAME}:local docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}:local
+	docker tag ${PROJECT_NAME}-apigateway:local docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}-apigateway:local
+	docker tag ${PROJECT_NAME}-db:local docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}-db:local
+	docker tag ${PROJECT_NAME}-discovery:local docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}-discovery:local
+
+.PHONY: push
+push:
+	oc login -u developer
+	oc project ${PROJECT_NAME} 2> /dev/null || oc new-project ${PROJECT_NAME}
+	docker login -u developer -p `oc whoami -t` docker-registry-default.${MINISHIFT_IP}.nip.io:443
+	docker push docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}:local
+	docker push docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}-apigateway:local
+	docker push docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}-db:local
+	docker push docker-registry-default.${MINISHIFT_IP}.nip.io:443/${PROJECT_NAME}/${PROJECT_NAME}-discovery:local
+
+.PHONY: pre-deploy
+pre-deploy:
+	cp deployment-review.yml deployment-local.yml
+	
+	sed -i -e "s/{{TAG_SERVICE}}/$(CI_TAG_SERVICE)/g" deployment-local.yml
+	sed -i -e "s/{{TAG_DB}}/$(CI_TAG_DB)/g" deployment-local.yml
+	sed -i -e "s/{{TAG_APIGATEWAY}}/$(CI_TAG_APIGATEWAY)/g" deployment-local.yml
+	sed -i -e "s/{{TAG_DISCOVERY}}/$(CI_TAG_DISCOVERY)/g" deployment-local.yml
+	sed -i -e "s#{{IMG_SERVICE}}#$(CI_IMG_SERVICE)#g" deployment-local.yml
+	sed -i -e "s#{{IMG_DB}}#$(CI_IMG_DB)#g" deployment-local.yml
+	sed -i -e "s#{{IMG_APIGATEWAY}}#$(CI_IMG_APIGATEWAY)#g" deployment-local.yml
+	sed -i -e "s#{{IMG_DISCOVERY}}#$(CI_IMG_DISCOVERY)#g" deployment-local.yml
+	sed -i -e "s/{{TAG_GLOBALCONF}}/$(TAG_GLOBALCONF)/g" deployment-local.yml
+	sed -i -e "s/{{TAG_SYSTEMCONF}}/$(TAG_SYSTEMCONF)/g" deployment-local.yml
+
+deploy:
+	oc login -u developer
+	oc project ${PROJECT_NAME} 2> /dev/null || oc new-project ${PROJECT_NAME}
+	oc describe -f ${DEPLOYMENT_FILE} && ([ $$? -eq 0 ] && oc replace -f ${DEPLOYMENT_FILE}) || ( oc create -f ${DEPLOYMENT_FILE} || echo "DEPLOYMENT REPLACED." )
+	oc label pods --all IAG.opco=GLP && oc label pods --all IAG.domain=comercial && oc label pods --all IAG.capability=${PROJECT_NAME} && oc label pods --all IAG.application=${PROJECT_NAME}
