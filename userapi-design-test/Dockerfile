@@ -11,4 +11,4 @@ WORKDIR /usr/src/app
 
 USER 1001
 
-CMD ["/bin/sh", "-c", "sleep 60 && apiary fetch --api-name=glpuserapi --output=swagger.yaml && dredd ./swagger.yaml http://userapi-apigateway:8080 -r apiary -j apiaryApiKey:bf50f24bdfc3dd2c747dc3c429b2b989 -j apiaryApiName:glpuserapi"]
+CMD ["/bin/sh", "-c", "sleep 180 && apiary fetch --api-name=glpuserapi --output=swagger.yaml && dredd ./swagger.yaml http://userapi-apigateway:8080 -r apiary -j apiaryApiKey:bf50f24bdfc3dd2c747dc3c429b2b989 -j apiaryApiName:glpuserapi"]

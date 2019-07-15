@@ -1,4 +1,4 @@
-FROM iaghcp-docker-technical-architecture.jfrog.io/newman:1.1.0
+FROM iaghcp-docker-technical-architecture.jfrog.io/newman:1.2.0
 
 RUN mkdir -p /usr/src/app && \
     addgroup -g 1000 -S username && \
