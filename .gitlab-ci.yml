@@ -32,6 +32,9 @@ variables:
   GITLAB_DB_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-db
   GITLAB_APIGATEWAY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-apigateway
   GITLAB_DISCOVERY_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-discovery
+  GITLAB_FUNCTIONAL_TEST_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-functional-test
+  GITLAB_PERFORMANCE_TEST_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-performance-test
+  GITLAB_DESIGN_TEST_REGISTRY: registry.gitlab.com/iag-dev/glp/userapi/userapi-design-test
 
 build_service_node:
   stage: build code
@@ -134,48 +137,96 @@ build_db:
   except:
     - triggers
 
+build_design_test:
+  stage: build application
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build -t $GITLAB_DESIGN_TEST_REGISTRY ./userapi-design-test
+    - docker tag $GITLAB_DESIGN_TEST_REGISTRY $GITLAB_DESIGN_TEST_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker push $GITLAB_DESIGN_TEST_REGISTRY:$CI_COMMIT_REF_NAME
+  except:
+    - triggers
+
+build_functional_test:
+  stage: build application
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build -t $GITLAB_FUNCTIONAL_TEST_REGISTRY ./userapi-functional-test
+    - docker tag $GITLAB_FUNCTIONAL_TEST_REGISTRY $GITLAB_FUNCTIONAL_TEST_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker push $GITLAB_FUNCTIONAL_TEST_REGISTRY:$CI_COMMIT_REF_NAME
+  except:
+    - triggers
+
+build_performance_test:
+  stage: build application
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build -t $GITLAB_PERFORMANCE_TEST_REGISTRY ./userapi-performance-test
+    - docker tag $GITLAB_PERFORMANCE_TEST_REGISTRY $GITLAB_PERFORMANCE_TEST_REGISTRY:$CI_COMMIT_REF_NAME
+    - docker push $GITLAB_PERFORMANCE_TEST_REGISTRY:$CI_COMMIT_REF_NAME
+  except:
+    - triggers
+
 .deploy: &deploy
   image: iaghcp-docker-technical-architecture.jfrog.io/openshift-cli:1.1.0
   script:
 
-    - cp $DEPLOYMENT_FILE deployment-$CI_BUILD_REF_NAME.yml
+    - cp $DEPLOYMENT_FILE deployment-$CI_JOB_ID.yml
 
-    - sed -i -e "s/{{TAG_SERVICE}}/$CI_TAG_SERVICE/g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s/{{TAG_DB}}/$CI_TAG_DB/g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_TAG_APIGATEWAY/g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_TAG_DISCOVERY/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{TAG_SERVICE}}/$CI_TAG_SERVICE/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_DB}}/$CI_TAG_DB/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_APIGATEWAY}}/$CI_TAG_APIGATEWAY/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_DISCOVERY}}/$CI_TAG_DISCOVERY/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_FUNCTIONAL_TEST}}/$CI_TAG_FUNCTIONAL_TEST/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_PERFORMANCE_TEST}}/$CI_TAG_PERFORMANCE_TEST/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_DESIGN_TEST}}/$CI_TAG_DESIGN_TEST/g" deployment-$CI_JOB_ID.yml
 
-    - sed -i -e "s#{{IMG_SERVICE}}#$CI_IMG_SERVICE#g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s#{{IMG_DB}}#$CI_IMG_DB#g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s#{{IMG_APIGATEWAY}}#$CI_IMG_APIGATEWAY#g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s#{{IMG_DISCOVERY}}#$CI_IMG_DISCOVERY#g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s#{{IMG_SERVICE}}#$CI_IMG_SERVICE#g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s#{{IMG_DB}}#$CI_IMG_DB#g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s#{{IMG_APIGATEWAY}}#$CI_IMG_APIGATEWAY#g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s#{{IMG_DISCOVERY}}#$CI_IMG_DISCOVERY#g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s#{{IMG_FUNCTIONAL_TEST}}#$CI_IMG_FUNCTIONAL_TEST#g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s#{{IMG_PERFORMANCE_TEST}}#$CI_IMG_PERFORMANCE_TEST#g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s#{{IMG_DESIGN_TEST}}#$CI_IMG_DESIGN_TEST#g" deployment-$CI_JOB_ID.yml
 
-    - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment-$CI_BUILD_REF_NAME.yml
-    - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment-$CI_BUILD_REF_NAME.yml
+    - sed -i -e "s/{{TAG_GLOBALCONF}}/$TAG_GLOBALCONF/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{TAG_SYSTEMCONF}}/$TAG_SYSTEMCONF/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{REMOTE_APPSETTINGS}}/$REMOTE_APPSETTINGS/g" deployment-$CI_JOB_ID.yml
+
+    - sed -i -e "s/{{ENV_JIRA_CLIENT_ID}}/$CI_JIRA_CLIENT_ID/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{ENV_JIRA_SECRET_ID}}/$CI_JIRA_SECRET_ID/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{ENV_XRAY_FUNC_TEST}}/$CI_XRAY_FUNC_TEST/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{ENV_XRAY_PERF_TEST}}/$CI_XRAY_PERF_TEST/g" deployment-$CI_JOB_ID.yml
+    - sed -i -e "s/{{ENV_TEST_NUMBER}}/$CI_COMMIT_SHA/g" deployment-$CI_JOB_ID.yml
 
     - oc login $OC_URL --token $OC_TOKEN --insecure-skip-tls-verify
     - oc project "$PROJECT" 2> /dev/null || oc new-project "$PROJECT"
-    - oc describe secret $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME || ( oc create secret docker-registry $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
+    - oc describe secret $CI_PROJECT_PATH_SLUG-$CI_JOB_ID || ( oc create secret docker-registry $CI_PROJECT_PATH_SLUG-$CI_JOB_ID
      --docker-server=gitlab.com 
      --docker-username=$GITLAB_REGISTRY_USER_FROM_OC 
      --docker-password=$GITLAB_REGISTRY_PASS_FROM_OC 
      --docker-email=$GITLAB_REGISTRY_EMAIL_FROM_OC && 
-     oc secrets link default $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME --for=pull && 
-     oc secrets link deployer $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME --for=pull && 
-     oc secrets link builder $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME --for=pull )
-    - oc describe secret $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry || ( oc create secret docker-registry $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry
+     oc secrets link default $CI_PROJECT_PATH_SLUG-$CI_JOB_ID --for=pull && 
+     oc secrets link deployer $CI_PROJECT_PATH_SLUG-$CI_JOB_ID --for=pull && 
+     oc secrets link builder $CI_PROJECT_PATH_SLUG-$CI_JOB_ID --for=pull )
+    - oc describe secret $CI_PROJECT_PATH_SLUG-$CI_JOB_ID-registry || ( oc create secret docker-registry $CI_PROJECT_PATH_SLUG-$CI_JOB_ID-registry
      --docker-server=registry.gitlab.com 
      --docker-username=$GITLAB_REGISTRY_USER_FROM_OC 
      --docker-password=$GITLAB_REGISTRY_PASS_FROM_OC 
      --docker-email=$GITLAB_REGISTRY_EMAIL_FROM_OC && 
-     oc secrets link default $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry --for=pull && 
-     oc secrets link deployer $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry --for=pull && 
-     oc secrets link builder $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-registry --for=pull )
-    - make deploy DEPLOYMENT_FILE=deployment-$CI_BUILD_REF_NAME.yml
+     oc secrets link default $CI_PROJECT_PATH_SLUG-$CI_JOB_ID-registry --for=pull && 
+     oc secrets link deployer $CI_PROJECT_PATH_SLUG-$CI_JOB_ID-registry --for=pull && 
+     oc secrets link builder $CI_PROJECT_PATH_SLUG-$CI_JOB_ID-registry --for=pull )
+    - make deploy DEPLOYMENT_FILE=deployment-$CI_JOB_ID.yml
   artifacts:
     paths:
-      - deployment-$CI_BUILD_REF_NAME.yml
+      - deployment-$CI_JOB_ID.yml
+
+.stop: &stop
+  image: iaghcp-docker-technical-architecture.jfrog.io/openshift-cli:1.0.0
+  script:
+    - oc login $OC_URL_STG --token $OC_TOKEN_STG --insecure-skip-tls-verify
+    - oc delete project $PROJECT
 
 review:
   <<: *deploy
@@ -207,109 +258,104 @@ review:
   except:
     - master
 
-validate_api_description:
-  stage: test application
-  before_script:
-    - apk update
-    - apk upgrade
-    - curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-    - chmod +x /usr/local/bin/docker-compose
-    - apk add --no-cache python3 py3-pip python3-dev
-    - apk add --no-cache openssl-dev libffi-dev build-base
-    - pip3 install --upgrade pip
-    - pip3 install --upgrade setuptools
-    - pip3 install cffi
-    - pip3 install docker-compose
-  script:
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
-    - export TAG=$CI_COMMIT_REF_NAME 
-    - docker-compose -f docker-compose.design.test.yml up -d
-    - sleep 90s
-    - docker logs $(docker ps -a --filter "name=userapi_userapi-design-test_1" --format "{{.ID}}")
-  after_script:
-    - docker stop $(docker ps -a --filter status=running --format "{{.ID}}") > /dev/null
-    - docker rm $(docker ps -a -q) -f > /dev/null
-    - docker rmi $(docker images -q) -f > /dev/null || true
+stop-review:
+  <<: *stop
+  stage: review application
+  variables:
+    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
+  when: manual
+  environment:
+    name: $CI_PROJECT_NAME/$CI_BUILD_REF_NAME
+    action: stop
   only:
+    - branches
+  except:
     - master
+
+validate_api_description:
+  <<: *deploy
+  stage: test application
+  variables:
+    OPENSHIFT_DOMAIN: dit-iaggs.com
+    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-design-test
+    DEPLOYMENT_FILE: deployment.design.test.yml
+    OC_URL: $OC_URL_STG
+    OC_TOKEN: $OC_TOKEN_STG
+
+    CI_TAG_SERVICE: $CI_COMMIT_REF_NAME
+    CI_TAG_DB: $CI_COMMIT_REF_NAME
+    CI_TAG_APIGATEWAY: $CI_COMMIT_REF_NAME
+    CI_TAG_DISCOVERY: $CI_COMMIT_REF_NAME
+    CI_TAG_DESIGN_TEST: $CI_COMMIT_REF_NAME
+    CI_IMG_SERVICE: $GITLAB_SERVICE_REGISTRY
+    CI_IMG_DB: $GITLAB_DB_REGISTRY
+    CI_IMG_APIGATEWAY: $GITLAB_APIGATEWAY_REGISTRY
+    CI_IMG_DISCOVERY: $GITLAB_DISCOVERY_REGISTRY
+    CI_IMG_DESIGN_TEST: $GITLAB_DESIGN_TEST_REGISTRY
+    TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
+    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
+  when: manual
   except:
     - triggers
 
 functional_test_service:
+  <<: *deploy
   stage: test application
-  before_script:
-    - apk update
-    - apk upgrade
-    - curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-    - chmod +x /usr/local/bin/docker-compose
-    - apk add --no-cache python3 py3-pip python3-dev
-    - apk add --no-cache openssl-dev libffi-dev build-base
-    - pip3 install --upgrade pip
-    - pip3 install --upgrade setuptools
-    - pip3 install cffi
-    - pip3 install docker-compose
-    - >-
-      export token=$(curl -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_SECRET_ID\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
-  script:
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
-    - export TAG=$CI_COMMIT_REF_NAME 
-    - docker-compose -f docker-compose.functional.test.yml up -d
-    - sleep 60s
-    - >-
-        curl 
-        -H "Content-Type: text/xml" 
-        -X POST -H "Authorization: Bearer $token" 
-        --data @"outputfile.xml" 
-        https://xray.cloud.xpand-it.com/api/v1/import/execution/junit?testExecKey=$XRAY_FUNC_TEST
-    - docker logs $(docker ps -a --filter ancestor=iaghcp-docker-technical-architecture.jfrog.io/newman:1.0.0 --format "{{.ID}}")
-  after_script:
-    - docker stop $(docker ps -a --filter status=running --format "{{.ID}}") > /dev/null
-    - docker rm $(docker ps -a -q) -f > /dev/null
-    - docker rmi $(docker images -q) -f > /dev/null || true
+  variables:
+    OPENSHIFT_DOMAIN: dit-iaggs.com
+    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-functional-test
+    DEPLOYMENT_FILE: deployment.functional.test.yml
+    OC_URL: $OC_URL_STG
+    OC_TOKEN: $OC_TOKEN_STG
+
+    CI_TAG_SERVICE: $CI_COMMIT_REF_NAME
+    CI_TAG_DB: $CI_COMMIT_REF_NAME
+    CI_TAG_APIGATEWAY: $CI_COMMIT_REF_NAME
+    CI_TAG_DISCOVERY: $CI_COMMIT_REF_NAME
+    CI_TAG_FUNCTIONAL_TEST: $CI_COMMIT_REF_NAME
+    CI_IMG_SERVICE: $GITLAB_SERVICE_REGISTRY
+    CI_IMG_DB: $GITLAB_DB_REGISTRY
+    CI_IMG_APIGATEWAY: $GITLAB_APIGATEWAY_REGISTRY
+    CI_IMG_DISCOVERY: $GITLAB_DISCOVERY_REGISTRY
+    CI_IMG_FUNCTIONAL_TEST: $GITLAB_FUNCTIONAL_TEST_REGISTRY
+    CI_JIRA_CLIENT_ID: $JIRA_CLIENT_ID
+    CI_JIRA_SECRET_ID: $JIRA_SECRET_ID
+    CI_XRAY_FUNC_TEST: $XRAY_FUNC_TEST
+    TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
+    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
   when: manual
-  artifacts:
-    paths:
-      - ./outputfile.xml
-  only:
-    - master
   except:
     - triggers
 
 performance_test_service:
+  <<: *deploy
   stage: test application
-  before_script:
-    - apk update
-    - apk upgrade
-    - curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-    - chmod +x /usr/local/bin/docker-compose
-    - apk add --no-cache python3 py3-pip python3-dev
-    - apk add --no-cache openssl-dev libffi-dev build-base
-    - pip3 install --upgrade pip
-    - pip3 install --upgrade setuptools
-    - pip3 install cffi
-    - pip3 install docker-compose
-    - >-
-      export token=$(curl -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_SECRET_ID\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
-  script:
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
-    - export TAG=$CI_COMMIT_REF_NAME 
-    - export TEST_NUMBER=$CI_COMMIT_SHA
-    - docker-compose -f docker-compose.performance.test.yml up -d
-    - sleep 120s
-    - >-
-        curl 
-        -H "Content-Type: text/xml" 
-        -X POST -H "Authorization: Bearer $token" 
-        --data @"outputfile.xml" 
-        https://xray.cloud.xpand-it.com/api/v1/import/execution/junit?testExecKey=$XRAY_PERF_TEST
-    - docker logs $(docker ps -a --filter ancestor=iaghcp-docker-technical-architecture.jfrog.io/taurus:1.1.0 --format "{{.ID}}")
-  after_script:
-    - docker stop $(docker ps -a --filter status=running --format "{{.ID}}") > /dev/null
-    - docker rm $(docker ps -a -q) -f > /dev/null
-    - docker rmi $(docker images -q) -f > /dev/null || true
+  variables:
+    OPENSHIFT_DOMAIN: dit-iaggs.com
+    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME-performance-test
+    DEPLOYMENT_FILE: deployment.performance.test.yml
+    OC_URL: $OC_URL_STG
+    OC_TOKEN: $OC_TOKEN_STG
+
+    CI_TAG_SERVICE: $CI_COMMIT_REF_NAME
+    CI_TAG_DB: $CI_COMMIT_REF_NAME
+    CI_TAG_APIGATEWAY: $CI_COMMIT_REF_NAME
+    CI_TAG_DISCOVERY: $CI_COMMIT_REF_NAME
+    CI_TAG_PERFORMANCE_TEST: $CI_COMMIT_REF_NAME
+    CI_IMG_SERVICE: $GITLAB_SERVICE_REGISTRY
+    CI_IMG_DB: $GITLAB_DB_REGISTRY
+    CI_IMG_APIGATEWAY: $GITLAB_APIGATEWAY_REGISTRY
+    CI_IMG_DISCOVERY: $GITLAB_DISCOVERY_REGISTRY
+    CI_IMG_PERFORMANCE_TEST: $GITLAB_PERFORMANCE_TEST_REGISTRY
+    CI_JIRA_CLIENT_ID: $JIRA_CLIENT_ID
+    CI_JIRA_SECRET_ID: $JIRA_SECRET_ID
+    CI_XRAY_PERF_TEST: $XRAY_PERF_TEST
+    TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
+    TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
+    REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
   when: manual
-  only:
-    - master
   except:
     - triggers
 
@@ -375,7 +421,7 @@ deploy_staging:
   variables:
     OPENSHIFT_DOMAIN: dit-iaggs.com
     PROJECT: $CI_PROJECT_PATH_SLUG
-    DEPLOYMENT_FILE: deployment-review.yml
+    DEPLOYMENT_FILE: deployment.yml
     OC_URL: $OC_URL_STG
     OC_TOKEN: $OC_TOKEN_STG
 
@@ -383,10 +429,17 @@ deploy_staging:
     CI_TAG_DB: $CI_PIPELINE_ID
     CI_TAG_APIGATEWAY: $CI_PIPELINE_ID
     CI_TAG_DISCOVERY: $CI_PIPELINE_ID
+    CI_TAG_DESIGN_TEST: $CI_COMMIT_REF_NAME
+    CI_TAG_FUNCTIONAL_TEST: $CI_COMMIT_REF_NAME
     CI_IMG_SERVICE: $CONTAINER_SERVICE_IMAGE
     CI_IMG_DB: $CONTAINER_DB_IMAGE
     CI_IMG_APIGATEWAY: $CONTAINER_APIGATEWAY_IMAGE
     CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
+    CI_IMG_DESIGN_TEST: $GITLAB_DESIGN_TEST_REGISTRY
+    CI_IMG_FUNCTIONAL_TEST: $GITLAB_FUNCTIONAL_TEST_REGISTRY
+    CI_JIRA_CLIENT_ID: $JIRA_CLIENT_ID
+    CI_JIRA_SECRET_ID: $JIRA_SECRET_ID
+    CI_XRAY_FUNC_TEST: $XRAY_REGRESSION_TEST_STG
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/stg\/env.sh'
     TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi-stg\/env.sh'
     REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/stg\/default.json'
@@ -403,7 +456,7 @@ deploy_production:
   stage: deploy application
   variables:
     OPENSHIFT_DOMAIN: apps.ocp01.hcp.iairgroup.com
-    PROJECT: ocp01-userapi-stg
+    PROJECT: ocp01-greetingapi-stg
     DEPLOYMENT_FILE: deployment.yml
     OC_URL: $OC_URL_PRO
     OC_TOKEN: $OC_TOKEN_PRO
@@ -412,75 +465,45 @@ deploy_production:
     CI_TAG_DB: $CI_PIPELINE_ID
     CI_TAG_APIGATEWAY: $CI_PIPELINE_ID
     CI_TAG_DISCOVERY: $CI_PIPELINE_ID
+    CI_TAG_FUNCTIONAL_TEST: $CI_COMMIT_REF_NAME
     CI_IMG_SERVICE: $CONTAINER_SERVICE_IMAGE
     CI_IMG_DB: $CONTAINER_DB_IMAGE
     CI_IMG_APIGATEWAY: $CONTAINER_APIGATEWAY_IMAGE
     CI_IMG_DISCOVERY: $CONTAINER_DISCOVERY_IMAGE
+    CI_IMG_FUNCTIONAL_TEST: $GITLAB_FUNCTIONAL_TEST_REGISTRY
+    CI_HIPTEST_FUNC_TEST: $HIPTEST_REGRESSION_TEST_PRO
     TAG_GLOBALCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/master\/env.sh'
     TAG_SYSTEMCONF: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-STATIC-CONFIG-SETTINGS\/glp-userapi\/env.sh'
     REMOTE_APPSETTINGS: 'https:\/\/raw.githubusercontent.com\/dparra0007\/W53-USERAPI-CONFIG\/master\/default.json'
   environment:
     name: production
-    url: http://userapi-apigateway-ocp01-greetingapi-stg.$OPENSHIFT_DOMAIN
+    url: http://userapi-apigateway-ocp01-userapi-stg.$OPENSHIFT_DOMAIN
   when: manual
   only:
       - master
   except:
     - triggers
 
-functional_regression_test_staging:
-  stage: regression test deploy
-  image: iaghcp-docker-technical-architecture.jfrog.io/newman:1.0.0
-  before_script:
-    - apk add --update curl
-    - >-
-      export token=$(curl -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_SECRET_ID\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
-  script:
-    - newman run https://www.getpostman.com/collections/f685e5d789063b1093f8 --reporters cli,junit --reporter-junit-export outputfile.xml --environment https://api.getpostman.com/environments/651996-f4ff0aa5-3c70-edbe-ddb1-d81231001eb4?apikey=100822fe2bd7454eb916c8ebdd4be266
-    - sed -i -e 's/<testcase/<testcase classname=\"CI\"/g' outputfile.xml
-    - >-
-        curl 
-        -H "Content-Type: text/xml" 
-        -X POST -H "Authorization: Bearer $token" 
-        --data @"outputfile.xml" 
-        https://xray.cloud.xpand-it.com/api/v1/import/execution/junit?testExecKey=$XRAY_REGRESSION_TEST_STG
-  only:
-      - master
-
-functional_regression_test_production:
-  stage: regression test deploy
-  image: iaghcp-docker-technical-architecture.jfrog.io/newman:1.0.0
-  before_script:
-    - apk add --update curl
-    - >-
-      export token=$(curl -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_SECRET_ID\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
-  script:
-    - newman run https://www.getpostman.com/collections/f685e5d789063b1093f8 --reporters cli,junit --reporter-junit-export outputfile.xml --environment https://api.getpostman.com/environments/651996-b6820a2c-0306-45c6-b5ab-1db91a8f727e?apikey=100822fe2bd7454eb916c8ebdd4be266
-    - sed -i -e 's/<testcase/<testcase classname=\"CI\"/g' outputfile.xml
-    - >-
-        curl 
-        -H "Content-Type: text/xml" 
-        -X POST -H "Authorization: Bearer $token" 
-        --data @"outputfile.xml" 
-        https://xray.cloud.xpand-it.com/api/v1/import/execution/junit?testExecKey=$XRAY_REGRESSION_TEST_PRO
-  when: manual
-  only:
-      - master
-
-stop-review:
-  image: iaghcp-docker-technical-architecture.jfrog.io/openshift-cli:1.0.0
-  stage: cleanup
+stop-staging:
+  <<: *stop
+  stage: deploy application
   variables:
-    PROJECT: $CI_PROJECT_PATH_SLUG-$CI_BUILD_REF_NAME
-  before_script:
-    - oc login $OC_URL_STG --token $OC_TOKEN_STG --insecure-skip-tls-verify
-  script:
-    - oc delete project $PROJECT
+    PROJECT: $CI_PROJECT_PATH_SLUG
   when: manual
   environment:
-    name: $CI_PROJECT_NAME/$CI_BUILD_REF_NAME
+    name: staging
     action: stop
   only:
-    - branches
-  except:
-    - master
+      - master
+
+stop-production:
+  <<: *stop
+  stage: deploy application
+  variables:
+    PROJECT: ocp01-greetingapi-stg
+  when: manual
+  environment:
+    name: production
+    action: stop
+  only:
+      - master

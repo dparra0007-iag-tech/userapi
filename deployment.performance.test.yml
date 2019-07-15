@@ -305,17 +305,17 @@ items:
       type: ImageChange
   status: {}
 
-# functional test
+# performance test
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: userapi-functional-test
+    name: greetingapi-performance-test
   spec:
     parallelism: 1
     completions: 1
     template:
       metadata:
-        name: userapi-functional-test
+        name: greetingapi-performance-test
       spec:
         containers:
         - env:
@@ -324,32 +324,15 @@ items:
           - name: JIRA_SECRET_ID
             value: '{{ENV_JIRA_SECRET_ID}}'
           - name: XRAY_FUNC_TEST
-            value: '{{ENV_XRAY_FUNC_TEST}}'
-          name: userapi-functional-test
-          image: {{IMG_FUNCTIONAL_TEST}}:{{TAG_FUNCTIONAL_TEST}}
+            value: '{{ENV_XRAY_PERF_TEST}}'
+          - name: REPORT
+            value: '{{ENV_TEST_NUMBER}}'
+          name: greetingapi-performance-test
+          image: {{IMG_PERFORMANCE_TEST}}:{{TAG_PERFORMANCE_TEST}}
           command: ["./start.sh"]
           imagePullPolicy: Always
         restartPolicy: Never
-# functional test
-
-# design test
-- apiVersion: batch/v1
-  kind: Job
-  metadata:
-    name: userapi-design-test
-  spec:
-    parallelism: 1
-    completions: 1
-    template:
-      metadata:
-        name: userapi-design-test
-      spec:
-        containers:
-        - name: userapi-design-test
-          image: {{IMG_DESIGN_TEST}}:{{TAG_DESIGN_TEST}}
-          imagePullPolicy: Always
-        restartPolicy: Never
-# design test
+# performance test
 
 - apiVersion: v1
   kind: Service

@@ -305,33 +305,6 @@ items:
       type: ImageChange
   status: {}
 
-# functional test
-- apiVersion: batch/v1
-  kind: Job
-  metadata:
-    name: userapi-functional-test
-  spec:
-    parallelism: 1
-    completions: 1
-    template:
-      metadata:
-        name: userapi-functional-test
-      spec:
-        containers:
-        - env:
-          - name: JIRA_CLIENT_ID
-            value: '{{ENV_JIRA_CLIENT_ID}}'
-          - name: JIRA_SECRET_ID
-            value: '{{ENV_JIRA_SECRET_ID}}'
-          - name: XRAY_FUNC_TEST
-            value: '{{ENV_XRAY_FUNC_TEST}}'
-          name: userapi-functional-test
-          image: {{IMG_FUNCTIONAL_TEST}}:{{TAG_FUNCTIONAL_TEST}}
-          command: ["./start.sh"]
-          imagePullPolicy: Always
-        restartPolicy: Never
-# functional test
-
 # design test
 - apiVersion: batch/v1
   kind: Job

@@ -332,24 +332,6 @@ items:
         restartPolicy: Never
 # functional test
 
-# design test
-- apiVersion: batch/v1
-  kind: Job
-  metadata:
-    name: userapi-design-test
-  spec:
-    parallelism: 1
-    completions: 1
-    template:
-      metadata:
-        name: userapi-design-test
-      spec:
-        containers:
-        - name: userapi-design-test
-          image: {{IMG_DESIGN_TEST}}:{{TAG_DESIGN_TEST}}
-          imagePullPolicy: Always
-        restartPolicy: Never
-# design test
 
 - apiVersion: v1
   kind: Service
