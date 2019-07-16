@@ -14,7 +14,7 @@ scenarios:
 
 modules:
   blazemeter:
-    token: 76ce8e49694f1902ade67df0:651e79244b13ff5f65d19c34a329080b7bdfe7c6c0934efe81b1172bcbb60d112fa27f61
+    token: 2c24146301d8c02466a79366:d5861138ddde70b091d76ac488df24f47491d9a0282900aa7a29e1c7b40157fab8a5c95e
 
 reporting:
 - module: blazemeter

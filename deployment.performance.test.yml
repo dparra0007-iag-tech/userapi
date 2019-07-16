@@ -329,7 +329,6 @@ items:
             value: '{{ENV_TEST_NUMBER}}'
           name: greetingapi-performance-test
           image: {{IMG_PERFORMANCE_TEST}}:{{TAG_PERFORMANCE_TEST}}
-          command: ["./start.sh"]
           imagePullPolicy: Always
         restartPolicy: Never
 # performance test
