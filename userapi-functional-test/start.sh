@@ -10,3 +10,5 @@ sed -i -e 's/<testcase/<testcase classname=\"CI\"/g' outputfile.xml
 export token=$(curl -H "Content-Type: application/json" -X POST --data "{ \"client_id\": \"$JIRA_CLIENT_ID\",\"client_secret\": \"$JIRA_SECRET_ID\" }" https://xray.cloud.xpand-it.com/api/v1/authenticate| tr -d '"')
 
 curl -H "Content-Type: text/xml" -X POST -H "Authorization: Bearer $token" --data @"outputfile.xml" https://xray.cloud.xpand-it.com/api/v1/import/execution/junit?testExecKey=$XRAY_FUNC_TEST
+
+cat outputfile.xml
