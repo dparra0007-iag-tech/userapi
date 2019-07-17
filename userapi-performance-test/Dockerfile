@@ -5,6 +5,12 @@ RUN groupadd -g 1000 username && \
     chown -R 1001:0 /bzt-configs && chmod -R og+rwx /bzt-configs && \
     chown -R 1001:0 /tmp/artifacts && chmod -R og+rwx /tmp/artifacts
 
+COPY .bzt-rc /
+RUN  chown -R 1001:0 /.bzt-rc && chmod -R og+rwx /.bzt-rc
+
+COPY .bzt-rc /home/username/
+RUN  chown -R 1001:0 /home/username/.bzt-rc && chmod -R og+rwx /home/username/.bzt-rc
+
 ADD test.sh test.sh
 RUN chmod +x ./test.sh
 
