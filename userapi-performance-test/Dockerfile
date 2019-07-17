@@ -30,6 +30,9 @@ RUN mkdir -p /usr/src/app && \
     adduser -u 1001 -S username -G username -s /sbin/nologin && \
     chown -R 1001:0 /usr/src/app && chmod -R og+rwx /usr/src/app
 
+COPY .bzt-rc /
+RUN  chown -R 1001:0 /.bzt-rc && chmod -R og+rwx /.bzt-rc
+
 WORKDIR /usr/src/app
 
 ADD test.sh test.sh
