@@ -15,6 +15,8 @@ scenarios:
 modules:
   blazemeter:
     token: 2c24146301d8c02466a79366:d5861138ddde70b091d76ac488df24f47491d9a0282900aa7a29e1c7b40157fab8a5c95e
+  newman:
+    tools-dir: /usr/src/app
 
 reporting:
 - module: blazemeter
